@@ -1,0 +1,68 @@
+Participant ID	028
+Staircase_name	Trial	Current Delay	Button	Response_code	Confidence
+Training	1	0	same time	-1	50
+Training	2	50	before	0	60
+Training	3	450	same time	-1	90
+400_1	1	400.0	after	1	50
+400_1	2	400.0	before	0	50
+400_1	3	400.0	before	0	20
+400_1	4	450.0	same time	-1	60
+400_1	5	450.0	same time	-1	80
+400_1	6	450.0	before	0	70
+400_1	7	450.0	before	0	90
+400_1	8	500.0	before	0	75
+400_1	9	500.0	same time	-1	90
+400_1	10	500.0	before	0	60
+400_1	11	550.0	after	1	80
+400_1	12	550.0	same time	-1	80
+400_1	13	550.0	before	0	70
+400_1	14	550.0	same time	-1	80
+400_1	15	550.0	after	1	75
+100_1	1	100.0	same time	-1	80
+100_1	2	100.0	before	0	80
+100_1	3	100.0	before	0	70
+100_1	4	150.0	same time	-1	90
+100_1	5	150.0	after	1	90
+100_1	6	150.0	before	0	80
+100_1	7	150.0	same time	-1	90
+100_1	8	150.0	same time	-1	90
+100_1	9	150.0	before	0	90
+100_1	10	200.0	after	1	90
+100_1	11	200.0	before	0	90
+100_1	12	200.0	same time	-1	90
+100_1	13	200.0	before	0	80
+100_1	14	250.0	same time	-1	75
+100_1	15	250.0	same time	-1	85
+400_2	1	400.0	after	1	70
+400_2	2	400.0	same time	-1	80
+400_2	3	400.0	after	1	80
+400_2	4	350.0	same time	-1	70
+400_2	5	350.0	before	0	75
+400_2	6	350.0	before	0	90
+400_2	7	400.0	same time	-1	80
+400_2	8	400.0	after	1	60
+400_2	9	400.0	after	1	75
+400_2	10	350.0	same time	-1	80
+400_2	11	350.0	before	0	90
+400_2	12	350.0	before	0	70
+400_2	13	400.0	same time	-1	80
+400_2	14	400.0	before	0	80
+400_2	15	400.0	before	0	75
+100_2	1	100.0	same time	-1	80
+100_2	2	100.0	before	0	90
+100_2	3	100.0	same time	-1	80
+100_2	4	100.0	same time	-1	90
+100_2	5	100.0	same time	-1	90
+100_2	6	100.0	before	0	90
+100_2	7	150.0	after	1	70
+100_2	8	150.0	after	1	70
+100_2	9	100.0	before	0	50
+100_2	10	100.0	same time	-1	70
+100_2	11	100.0	before	0	50
+100_2	12	150.0	same time	-1	75
+100_2	13	150.0	before	0	80
+100_2	14	150.0	after	1	75
+100_2	15	150.0	same time	-1	85
+Post_task_question	TaskGeneral	76	NA	NA	NA
+Post_task_question	Difficulty	61	NA	NA	NA
+Post_task_question	Breathless	6	NA	NA	NA

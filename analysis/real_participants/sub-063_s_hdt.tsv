@@ -1,0 +1,68 @@
+Participant ID	063
+Staircase_name	Trial	Current Delay	Button	Response_code	Confidence
+Training	1	500	before	0	0
+Training	2	50	before	0	80
+Training	3	350	before	0	80
+400_1	1	400.0	before	0	70
+400_1	2	400.0	before	0	70
+400_1	3	450.0	before	0	70
+400_1	4	450.0	before	0	70
+400_1	5	500.0	same time	-1	50
+400_1	6	500.0	before	0	50
+400_1	7	500.0	before	0	50
+400_1	8	550.0	before	0	50
+400_1	9	550.0	same time	-1	60
+400_1	10	550.0	before	0	40
+400_1	11	600.0	same time	-1	40
+400_1	12	600.0	before	0	50
+400_1	13	600.0	before	0	50
+400_1	14	650.0	same time	-1	50
+400_1	15	650.0	before	0	70
+100_1	1	100.0	same time	-1	60
+100_1	2	100.0	same time	-1	60
+100_1	3	100.0	before	0	50
+100_1	4	100.0	same time	-1	40
+100_1	5	100.0	same time	-1	60
+100_1	6	100.0	before	0	60
+100_1	7	150.0	before	0	50
+100_1	8	150.0	before	0	50
+100_1	9	200.0	after	1	50
+100_1	10	200.0	before	0	60
+100_1	11	200.0	after	1	60
+100_1	12	200.0	after	1	70
+100_1	13	150.0	after	1	60
+100_1	14	150.0	same time	-1	50
+100_1	15	150.0	before	0	60
+400_2	1	400.0	before	0	60
+400_2	2	400.0	before	0	60
+400_2	3	450.0	before	0	70
+400_2	4	450.0	same time	-1	50
+400_2	5	450.0	same time	-1	50
+400_2	6	450.0	before	0	60
+400_2	7	500.0	before	0	70
+400_2	8	500.0	after	1	40
+400_2	9	500.0	same time	-1	50
+400_2	10	500.0	before	0	60
+400_2	11	500.0	before	0	50
+400_2	12	550.0	before	0	40
+400_2	13	550.0	same time	-1	60
+400_2	14	550.0	before	0	50
+400_2	15	600.0	before	0	40
+100_2	1	100.0	same time	-1	50
+100_2	2	100.0	before	0	60
+100_2	3	100.0	after	1	60
+100_2	4	100.0	before	0	70
+100_2	5	100.0	before	0	70
+100_2	6	150.0	same time	-1	50
+100_2	7	150.0	same time	-1	40
+100_2	8	150.0	same time	-1	50
+100_2	9	150.0	after	1	40
+100_2	10	150.0	same time	-1	50
+100_2	11	150.0	same time	-1	60
+100_2	12	150.0	before	0	50
+100_2	13	150.0	same time	-1	50
+100_2	14	150.0	before	0	50
+100_2	15	200.0	before	0	60
+Post_task_question	TaskGeneral	70	NA	NA	NA
+Post_task_question	Difficulty	76	NA	NA	NA
+Post_task_question	Breathless	3	NA	NA	NA

@@ -3,7 +3,7 @@
 
 This git repository provides all required code to run the *_Staircase - Heartbeat Discrimination Task_*, a novel cardiac discrimintation interoception task. It is part of a larger Em-Body toolkit currently under development that will be released in due course.
 
-The [Wiki](https://github.com/Hannah-Savage/Staircase-Heartbeat-Discrimination-Task/wiki) page has all required information to install and run the task.
+The [Wiki](https://github.com/Hannah-Savage/Staircase-Heartbeat-Discrimination-Task/wiki) page has all required information to install and run the task. It also contains all the code to run the analysis and generate the figures in the manuscript below.
 
 **If you use this task please cite the following publication:**
 

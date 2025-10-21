@@ -1,0 +1,484 @@
+'ThreshPulse.s2s
+'Written by Steven Clifford - CED - 21/01/03
+'last modified:        27/08/2024 SG
+'This is a script to detect a threshold crossing on a waveform input channel
+'and mark this by outputting a TTL pulse or setting a marker in a memory channel
+'which can be, for example, used to display heart rate. 
+
+'It uses the current sampling configuration which must include at least one waveform channel.
+'
+'Note this script is UNDER DEVELOPMENT BY CED and is included for
+'illustration only. We make no warranties as to its suitability
+'or otherwise. It has not been thoroughly tested.
+'You should use it 'as is'
+
+'When run, the user is asked to select a waveform input channel, the direction
+'of the required threshold crossing and how to mark the crossing. A data file is then started and a 
+'horizontal cursor set on the input waveform channel which the user should position 
+'at a reasonable starting level for the threshold. 
+
+'The user then presses OK and 'Sample Start' to commence sampling.
+
+'NOTE: This script writes an output sequence into the same folder as the threshpul.s2s script
+
+
+
+var seqFile$;                                           ' Name and path for sequencer file
+var data%;                                              ' Handle of new data file
+var sTime;                                              ' The last time we looked at the idle routine
+var curtrigLev;                                         ' Current trigger level as checked by idle routine
+var oldTrigLev := 1;                                    ' Previous trigger level
+var trigChan%;                                          ' Memory channel used for testing purposes
+var inputChan%;                                         ' Waveform channel monitored for threshold crossings
+var setDelay%;                                          ' Delay time in ms
+var delayTicks%;                                        ' Delay in sequencer steps to pass as variable
+var trigVar;                                            ' Level of threshold in ADC units
+var threshType%;                                        ' Pulse direction
+var pulseFlag% := 1;                                    ' Flag if TTL pulse required
+var memFlag% := 1;                                      ' Flag if memory channel marker required
+var numMem%;                                            ' Number of items imported into memory channel
+Var go% := 0, Sent% := 0;                               ' Switch to detect N R-waves
+Var TargetCt% := 9;                                     ' Number of ECG beats to detect
+Var Times%[100];                                        ' Delay times for tone
+Var DelT%;                                              ' Single delay time value
+Var Port%;                                              ' Serial line to use 
+Var DefaultIN% := 12;                                   ' Incoming Serial port
+Var ToneDur := 0.1;                                    ' Output wave duration 
+
+'=== 26/06/2015
+var path$; 
+View(App(3));
+path$:=FileName$(1)+FileName$(2);                       ' path to the running script.
+seqFile$:=path$+"pulse.pls";                            ' The sequence created by the script will be saved in the same folder
+'===
+
+View(App(8)).WindowVisible(0);                          'Hide the sampling &
+View(App(9)).WindowVisible(0);                          'Sequencer controls
+
+ToolbarVisible(1);                                      ' Make toolbar visible always
+GetCOMPort%();                                          'Select a COM port
+CreateWave%();                                          'Generate the output tone  
+
+New%();                                                 ' Set up new sampling window
+DoToolbar();                                            ' Do the toolbar
+
+func New%()                                             ' New sampling window
+var ok%;
+var test%;
+var waveChans%[32];                                     ' List of available waveform channels	
+View(LogHandle());                                      ' Make log view the current view
+EditSelectAll();                                        ' Select all text in log view
+EditClear();                                            ' Delete it
+Window(0,80,100,100);                                   ' Display it at the bottom of the screen
+WindowVisible(1);                                       ' Make it visbible
+
+	if data%>0 then                                     ' If there is already a data view open then
+  if ViewKind(data%)>-1 then
+  	 View(data%);                                       ' Close it
+  	 FileClose();
+  endif;
+endif;
+
+Var chans%[0], ChNames$[0], k%, l%;                     'Get a list of waveform channel in the configuration
+For k% := 1 to SampleChannels(-2) do
+    
+    If SampleChanInfo(k%, 0) = 1 then
+        l% := Len(Chans%[]);
+        Resize chans%[l%+1];
+        Resize ChNames$[l%+1];
+        Chans%[l%] := k%;
+        ChNames$[l%] := Print$("%d %s", k%, SampleTitle$(k%));
+    endif  
+next  
+
+    If Len(chans%[]) = 0 then                           'If no channels found, halt
+        Message("Your sampling configuration contains no waveform channels\n          Please set up suitable channel and re-run script");
+        Halt;
+    endif;
+
+DlgCreate("Settings");                                  ' Dialog to set channel and delay
+    DlgList(1, "Input channel", ChNames$[]);
+'DlgInteger(2,"Delay (ms)",2,1000);
+DlgList(2,"Threshold","Positive|Negative",8,20,2);
+DlgText("Action",2,3);
+DlgCheck(3,"TTL pulse",19,3);
+DlgCheck(4,"Memory channel marker",19,4);
+'ok% := DlgShow(inputChan%,setDelay%,threshType%);
+ok% := DlgShow(inputChan%,threshType%,pulseFlag%,memFlag%);
+
+if not ok% then
+	Message("Pressed cancel - Script closing");
+	Halt;
+endif;
+
+      inputChan% := chans%[inputChan%];
+
+delayTicks%:=(setDelay%*10-3);                          ' Calculate number of sequencer steps to pass as variable
+
+SampleSequencer("");                                    ' Clear any current output sequences
+if pulseFlag% then	
+	WriteSequence(threshType%);                         ' Write output sequence to use if TTL pulse required
+endif;
+
+data%:=FileNew(0,2);                                    ' Open a new data file for sampling
+sTime := 0;
+HCursorDelete(-1);					
+WindowVisible(1);
+if data%<0 then Message("Unable to open new data file");Halt; endif;
+'DrawMode(-1,2);														'Set event draw mode to lines
+Window(0,0,100,100);                                    ' Make data window in top bit of screen
+'XRange(0,10);
+HCursorNew(inputChan%,oldTrigLev);                      ' Set cursor on appropriate channel	
+'Interact("Position cursor at initial threshold level",1023);
+oldTrigLev:=HCursor(1);                                 ' Get threshold level
+trigVar:=(HCursor(1)-ChanOffset(inputChan%))/(5*ChanScale(inputChan%))*32768; ' Convert to ADC units
+SampleSeqVar(3,trigVar);                                ' Set output sequencer variable
+if memFlag% then
+	trigChan%:=MemChan(3);	
+	DrawMode(trigChan%,2);
+	ChanShow(trigChan%);
+endif;
+'FrontView(LogHandle());											'Bring the Log view to the front
+FrontView(data%);                                       ' Bring the data view to the front
+ToolbarEnable(3,0);                                     ' Disable "Sample stop" button
+ToolbarEnable(2,1);                                     ' Disable "Sample stop" button
+ToolbarText("Press SAMPLE START to commence sampling");
+return 1;
+end;
+
+proc DoToolbar()
+ToolbarSet(1,"Quit",Quit%);                             ' Set up toolbar buttons
+ToolbarSet(2,"Sample start", Start%);
+ToolbarSet(3,"Sample stop", Stop%);
+ToolbarSet(4,"New file", New%);
+Toolbarset(5,"Detect OFF", Detect%);
+'ToolbarSet(6,"Change delay",ChangeDelay%);
+ToolbarEnable(3,0);                                     ' Disable "Sample stop" button
+'ToolbarEnable(6,0);
+View(data%);
+Toolbar("Press SAMPLE START to commence sampling", 1023); ' Wait here until quit is pressed
+end;
+
+func Quit%()                                            ' If "Quit" is pressed
+SampleStop();                                           ' Stop sampling
+return 0;                                               ' leave toolbar
+end;
+
+func Start%()                                           ' If "Start" is pressed
+ToolbarSet(0,"",Idle%);                                 ' Call Idle%() whenever there is free time
+SampleStart();                                          ' Start sampling
+ToolbarEnable(4,0);                                     ' Disable "New file" button
+ToolbarEnable(3,1);                                     ' Enable "Sample stop" button
+ToolbarEnable(2,0);                                     ' Disable "Sample start" button
+ToolbarEnable(1,0);                                     ' Disable "Quit" button
+'ToolbarEnable(6,1);
+ToolbarText("Press SAMPLE STOP to stop sampling");
+return 1;                                               ' Stay with toolbar
+end;
+
+func Stop%()                                            ' If "Stop" is pressed
+ToolbarClear(0);
+SampleStop();                                           ' Stop sampling
+ToolbarEnable(4,1);                                     ' Enable "New file" button
+ToolbarEnable(3,0);                                     ' Disable "Sample stop" button
+ToolbarEnable(1,1);                                     ' Enable "Quit" button
+'ToolbarEnable(6,0);
+ToolbarText("Press FILE NEW to capture more data");
+return 1;                                               ' Stay in toolbar
+end;
+
+
+Func ChangeDelay%()                                     ' Function to change delay time
+setDelay%:=Input("Delay time (ms)",setDelay%,2,1000);
+delayTicks%:=(setDelay%*10-3);
+SampleSeqVar(4,delayTicks%);
+return 1;
+end;
+
+func Idle%()                                            ' The Idle routine is called when PC has time
+var eTime, Ct%;
+View(data%);
+eTime:=Maxtime();
+
+If go% = 1 then Ct% := SampleSeqVar(5);
+      ToolbarText(Print$("Count = %d", Ct%));
+    If Ct% = TargetCt% then
+        Samplekey("H");
+        'Detect%();
+        Send%(Ct%);
+  endif
+endif 
+
+Var sec := Seconds();
+PrintLog(Print$("\n%f",sec));
+
+Var Chrs% :=SerialCount(Port%, ";");
+    Seconds(0); ' idea of what's the loop time = servicing the serial port, not even checking that the word is there
+    If Chrs% >= 1 then
+    Receive%(Chrs%);
+endif    
+    
+'PLACE CODE IN HERE TO ANALYSE THE DATA FILE BETWEEN sTime and eTime
+curTrigLev:=HCursor(1);                                 ' Check if threshold level has changed
+if curTrigLev <> oldTrigLev then                        ' If so, Get new level in ADC units
+	trigVar:=(curTrigLev-ChanOffset(inputChan%))/(5*ChanScale(inputChan%))*32768;
+	SampleSeqVar(3,trigVar);                            ' Update sequencer variables		
+	oldTrigLev:=curTrigLev;                             ' Reset previous cursor level to current level
+endif;
+if memFlag% then                                        ' If memory channel markers required
+	if threshType% = 0 then
+		numMem% := MemImport(trigChan%,inputChan%,sTime,eTime,2,0,oldTrigLev); ' import crossing times into memory channel
+	else
+		numMem% := MemImport(trigChan%,inputChan%,sTime,eTime,3,0,oldTrigLev);					
+	endif;
+	if numMem% then
+		sTime:=eTime;
+	endif;
+endif;
+
+return 1;                                               ' Stay in toolbar
+end;
+
+
+'This function writes an output sequnce for use with the script. 
+Func WriteSequence(type%)
+var seq%;
+var seqSet%;
+seq%:=FileOpen(seqFile$,8,1);
+WindowVisible(1);
+'Message(seq%);
+View(seq%);
+if type% = 0 then
+	Print("            SET      0.10 1 0\n");
+	Print("            VAR    V1,num=0\n"); 'Channel number
+	Print("            VAR    V2,prev=0\n");
+	Print("            VAR    V3,lev\n");
+	Print("            VAR    V4,del=%d\n",delayTicks%);
+    Print("            VAR    V5,Count\n\n");
+    Print("            WAVEGO  T,TW\n\n");     
+    
+    Print("AA: 'H HALT\n\n"); 
+    
+	Print("UNDER:  'G    CHAN   num,%d\n",inputChan%);
+	Print("            BGT    num,lev,pulse\n");
+	Print("            JUMP   under\n\n");
+	Print("OVER:       CHAN   num,%d\n",inputChan%);
+	Print("            BLT    num,lev,under\n");
+	Print("            JUMP   over\n\n");
+	Print("PULSE:      Mark 1\n");
+    Print("            Delay del\n");
+    Print("            WaveST T\n");
+    Print("            DIGOUT [00000001]\n");
+    Print("            ADDI Count, 1\n");
+	Print("            DELAY 7\n");
+	Print("            DIGOUT [00000000]\n");
+    Print("            Delay ms(%d)\n", ToneDur*1000);
+    Print("            WAVEGO  T,TW\n"); 
+	Print("            JUMP   over");
+else
+    Print("            SET      0.10 1 0\n");
+	Print("            VAR    V1,num=0\n");
+	Print("            VAR    V2,prev=0\n");
+	Print("            VAR    V3,lev\n");
+	Print("            VAR    V4,del=%d\n\n",delayTicks%);
+    Print("            VAR    V5,Count\n");
+    Print("            WAVEGO  T,TW\n"); 
+    
+    Print("AA: 'H HALT\n");
+    
+	Print("OVER:  'G     CHAN   num,%d\n",inputChan%);
+	Print("            BLT    num,lev,pulse\n");
+	Print("            JUMP   over\n\n");
+	Print("UNDER:      CHAN   num,%d\n",inputChan%);
+	Print("            BGT    num,lev,over\n");
+	Print("            JUMP   under\n\n");
+	Print("PULSE:      Delay Del\n");
+    Print(" WaveST T\n");
+    Print("            DIGOUT [00000001]\n");
+    Print("            ADDI Count, 1\n");
+	Print("            DELAY 7\n");
+	Print("            DIGOUT [00000000]\n");
+    Print("            Delay ms(%d)\n", ToneDur*1000);
+    Print("        WAVEGO  T,TW\n"); 
+	Print("            JUMP   under");
+endif;
+'FileSaveAs("c:\\Spike4\\Sequence\\Pulse.pls");
+FileSaveAs(Path$+"\\Pulse.pls",2, 1);
+FileClose();
+seqSet%:=SampleSequencer(seqFile$);
+'Message(seqSet%);
+return 1;
+end;
+
+Func Detect%();
+
+If go% = 1 then
+    Toolbarset(5,"Detect OFF", Detect%);
+    Go% := 0;
+else
+    Toolbarset(5,"Detect ON", Detect%);
+    SampleSeqVar(5, 0);
+    Samplekey("G");
+    Go% := 1;
+endif    
+    
+Return 1
+end
+
+Func Send%(ct%);
+'SerialWrite(Port%, Print$("Got %d;", ct%));
+SerialWrite(Port%, UCase$("Ended;"));
+    SampleSeqVar(5, 0);
+    'Go% := 0;
+    Sent% := 1;
+    Detect%();
+
+Return 1;
+end
+
+Func Receive%(Chrs%);
+Var In$, i%;
+Var Arr$[Chrs%];
+
+SerialRead(Port%, Arr$[], ";");
+
+For i% := 0 to Chrs%-1 do
+    In$ := Arr$[i%];
+    
+    If in$ <> "" then
+        DoWhat%(In$);
+    endif
+    
+next    
+Return 1
+end
+
+Func GetCOMPort%();
+Var i%, l%, COMS%[256], COMS$[256];
+
+var p% := SerialOpen(COMS%, COMS$[]);
+
+
+
+'For i% := 1 to 256 do
+'    If SerialOpen(i%) = 0 then
+'        Resize COMS%[Len(COMS%)+1];
+'        COMS%[Len(COMS%)-1] := i%;
+'        Resize COMS$[Len(COMS$)+1];
+'        COMS$[Len(COMS$)-1] := Print$("COM %d",i%);
+'        SerialClose(i%);
+'    endif    
+'Next
+
+If P% = 0 then
+    Message("No COM ports found. Halting");
+    Halt;
+endif
+
+Resize COMS%[p%];
+Resize COMS$[p%];
+
+For i% := 0 to p%-1 do
+    If Len(COMS$[i%]) > L% then
+        L% := Len(COMS$[i%]);
+    endif
+    If Coms%[i%] = DefaultIN% then
+        Port% := i%;
+    endif    
+next    
+
+Var Dummy%;
+
+DlgCreate("Serial line");  'Start new dialog
+DlgText("Incoming COM port to use", 0, 1);
+DlgList(1,L%, COMS$[], 0, 3, 2);
+DlgButton(0,"Cancel");
+DlgButton(1,"OK");
+Var ok% := DlgShow(Dummy%, Port%);    'ok% is 0 if user cancels,  variables updated if not
+
+if ok% <= 0 then Message("Cancelled. Halting"); Halt; endif
+    
+Port% := COMS%[Port%];
+
+var ERR% := SerialOpen(Port%, 9600);
+
+If ERR% < 0 then
+    Message(Print$("COM port %d failed to open. Halting", Port%)); Halt;
+endif
+
+Return 1
+end
+
+Func DoWhat%(In$);
+'What does the incoming string mean...
+Var Cmd$ := Left$(In$, 5); 
+Var code%[4];
+
+docase
+Case Cmd$ = UCase$("Start") then
+    Code%[0] := 1;
+    SampleText(Cmd$, Maxtime(), Code%[]); 
+    go% := 0;
+    Detect%();
+    
+    
+    Case Cmd$ = UCase$("Reset") then 'Reset count
+       SampleSeqVar(5, 0);
+    
+    Case Cmd$ = UCase$("Count") then 'Set the count target
+    
+
+    
+    Var Ct% := Val(DelStr$(In$, 0, 5));
+    
+            If ct% > 0 then 
+                TargetCt% := Ct%;
+    endif
+    
+    Code%[0] := 2;
+    SampleText(Cmd$, Maxtime(), Code%[]);    
+    
+Case Cmd$ = UCase$("Delay") then
+    In$ := DelStr$(IN$, 0, 5);
+    DelT% := Val(in$); 
+    Var Seqstep := SampleSeqClock(1);
+    SeqStep := DelT%/SampleSeqClock(1);
+    delayTicks% := SeqStep-3;
+    Sampleseqvar(4, delayTicks%);
+    'SampleText(Print$("Delay %d ms", Sampleseqvar(4)));
+    
+        Code%[0] := 3;
+    SampleText(Print$("%s %d", Cmd$, DelT%), Maxtime(), Code%[]);
+    
+Case Left$(Cmd$, 2) = UCase$("M_") then    
+    SampleText(Cmd$, Maxtime(), Code%[]);    
+    
+Case Left$(Cmd$, 2) = UCase$("C_") then    
+    SampleText(Cmd$, Maxtime(), Code%[]); 
+    
+Case Left$(Cmd$, 2) = UCase$("R_") then    
+    SampleText(Cmd$, Maxtime(), Code%[]);      
+    
+Case Left$(Cmd$, 2) = UCase$("Q_") then    
+    SampleText(Cmd$, Maxtime(), Code%[]);      
+    
+endcase
+
+In$ := "";
+
+Return 1
+end
+
+Func CreateWave%();
+var temp% := Filenew(7,0, 1, 1, 32);
+View(Temp%);
+var ch1% := VirtualChan(0, ""); 'Create new virtual channel
+ChanShow(ch1%); 'Make it visible
+VirtualChan(ch1%, "WEnv(0.002, 0.096, 0.002, 0)*WSin(440, 0)*5", 0, 0.0004, 0);  'Edit virtual channel
+FileSaveAs(path$+"\\temp.smrx",0);
+PlayWaveDelete();
+PlayWaveAdd("T", "Tone", 0, 0, ToneDur, Ch1%, 1);
+FileDelete(path$+"\\temp.smrx", 0);
+
+Return 1
+end

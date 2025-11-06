@@ -7,7 +7,7 @@ The [Wiki](https://github.com/Hannah-Savage/Staircase-Heartbeat-Discrimination-T
 
 **If you use this task please cite the following publication:**
 
-Savage, H.S., Longley, B.F., Hian, W.L.P., Nord, C.L., Kilner J., & Garfinkel, S.N. (2025). The StaircaseHeartbeat Discrimination Task(S-HDT). PsyArXiv. doi:[10.31234/osf.io/59rbn_v1](https://doi.org/10.31234/osf.io/59rbn_v1)
+Savage, H.S., Longley, B.F., Lim, W.P.H., Nord, C.L., Kilner J., & Garfinkel, S.N. (2025). The StaircaseHeartbeat Discrimination Task(S-HDT). PsyArXiv. doi:[10.31234/osf.io/59rbn_v1](https://doi.org/10.31234/osf.io/59rbn_v1)
 
 _Please note that this is a pre-printed manuscript that has not (yet!) completed peer review_
 
